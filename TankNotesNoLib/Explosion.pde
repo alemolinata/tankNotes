@@ -5,22 +5,13 @@ class Explosion{
         
         public int explosionPitch;
         
-	int c = 0;
+	public int c = 0;
 	
 	public Explosion( float initialX, float initialY ) {
 		super();
 		initX = initialX;
 		initY = initialY;
                 explosionPitch = (int)map(initY, 0, TankNotesNoLib.canvasHeight, 70, 38);
-	}
-	
-	public boolean timer(){
-		if (c<15){
-			return true;
-		}
-		else{
-			return false;
-		}
 	}
 	
 	public void draw(){

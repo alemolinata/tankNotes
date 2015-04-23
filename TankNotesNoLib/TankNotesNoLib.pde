@@ -12,14 +12,18 @@ int pitchValue;
 import themidibus.*; //Import the library
 MidiBus myBus; // The MidiBus
 
+int noteLength = 10; 
+
 int channel = 1 ;
 int noteVelocity = 127;
 
+long explosionTimer;
 
 boolean clicking = false;
 
 ArrayList<Explosion> explosions = new ArrayList<Explosion>();
 ArrayList<CannonBall> cannonballs = new ArrayList<CannonBall>();
+ArrayList<Star> stars = new ArrayList<Star>();
 
 float ox1; // X coordinate of center of cannon 1
 float oy1; // Y coordinate of center of cannon 1
@@ -62,6 +66,16 @@ void setup() {
 }
 
 void draw() {
+  
+
+  if (frameCount % 2 == 0) {
+  int noteLength = 10;
+  } else{
+    int noteLength = 2;
+  }
+  
+  
+  explosionTimer++;
   readValues();
 
   float posx1 = ox1 + cos(angleCannon1) * cannonLength;
@@ -114,7 +128,7 @@ void draw() {
           float aY = (cb1.position.y + cb2.position.y)/2;
           Explosion exp = new Explosion(aX, aY);
           explosions.add(exp);
-
+          explosionTimer = 0;
           myBus.sendNoteOn(channel, exp.explosionPitch, noteVelocity); // Send a Midi noteOn
         }
       }
@@ -148,17 +162,31 @@ void draw() {
   }
 
   for (int i = explosions.size () - 1; i >= 0; i--) {
-    if (explosions.get(i).timer()) {
+    if (explosions.get(i).c<15) {
       explosions.get(i).draw();
-    } else {
-
-
-      myBus.sendNoteOff(channel, explosions.get(i).explosionPitch, noteVelocity); // Send a Midi nodeOff
+      
+      
+      
+      if(explosions.get(i).c==noteLength){
+        myBus.sendNoteOff(channel, explosions.get(i).explosionPitch, noteVelocity); // Send a Midi nodeOff
+      } 
+    } 
+    else {
       explosions.remove(i);
     }
   }
 
-drawOscTest();  
+  //drawOscTest();  
+
+
+  for (int i = stars.size ()-1; i >= 0; i--) {
+    Star star = stars.get(i);
+    star.display();
+    if (star.finished()) {
+      // Items can be deleted with remove()
+      stars.remove(i);
+    }
+  }
 }
 
 public void readValues() {
@@ -213,7 +241,14 @@ void oscEvent(OscMessage theOscMessage) {
       } else if (theOscMessage.addrPattern().equals("velocity") == true) {
         velValue = value;
         println("velocity = " + value);
+
+        if (velValue > 0 && explosionTimer > 10) {
+          
+          stars.add(new Star(random(width), random(height/2)));
+        }
       }
+
+
       return;
     }
   }
@@ -221,11 +256,12 @@ void oscEvent(OscMessage theOscMessage) {
 
 
 void drawOscTest() {
-pushStyle();
-ellipse(pitchValue, pitchValue, velValue, velValue);
-fill(255);
-textAlign(CENTER);
-text("pitch = " + pitchValue, pitchValue,pitchValue);
-text("velocity = " + velValue, pitchValue,pitchValue+15);
-popStyle();
+  pushStyle();
+  ellipse(pitchValue, pitchValue, velValue, velValue);
+  fill(255);
+  textAlign(CENTER);
+  text("pitch = " + pitchValue, pitchValue, pitchValue);
+  text("velocity = " + velValue, pitchValue, pitchValue+15);
+  popStyle();
 }
+
