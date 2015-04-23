@@ -1,15 +1,5 @@
-
-//OSC 
-import oscP5.*;
-import netP5.*;
-OscP5 oscP5;
-NetAddress myRemoteLocation;
-
-int velValue;
-int pitchValue;
-
-//MIDI
 import themidibus.*; //Import the library
+
 MidiBus myBus; // The MidiBus
 
 int channel = 1 ;
@@ -45,11 +35,6 @@ void setup() {
   smooth();
   frameRate(30);
 
-  //OSC: start oscP5, listening for incoming messages at port 12000 
-  oscP5 = new OscP5(this, 12000);
-  myRemoteLocation = new NetAddress("127.0.0.1", 12000);
-
-  //MIDI
   //MidiBus.list(); // List all available Midi devices on STDOUT. This will show each device's index and name.
   myBus = new MidiBus(this, 0, 1); // Create a new MidiBus using the device index to select the Midi input and output devices respectively.
 
@@ -114,8 +99,9 @@ void draw() {
           float aY = (cb1.position.y + cb2.position.y)/2;
           Explosion exp = new Explosion(aX, aY);
           explosions.add(exp);
-
-          myBus.sendNoteOn(channel, exp.explosionPitch, noteVelocity); // Send a Midi noteOn
+          
+           myBus.sendNoteOn(channel, exp.explosionPitch, noteVelocity); // Send a Midi noteOn
+          
         }
       }
     }
@@ -151,14 +137,13 @@ void draw() {
     if (explosions.get(i).timer()) {
       explosions.get(i).draw();
     } else {
-
-
+      
+      
       myBus.sendNoteOff(channel, explosions.get(i).explosionPitch, noteVelocity); // Send a Midi nodeOff
       explosions.remove(i);
+      
     }
   }
-
-drawOscTest();  
 }
 
 public void readValues() {
@@ -196,36 +181,4 @@ static int generateColor(float colorHeight, int screenHeight) {
   } else {
     return 0xFFFFEB5A; // yellow
   }
-}
-
-void oscEvent(OscMessage theOscMessage) {
-  /* check if theOscMessage has the address pattern we are looking for. */
-
-  if (theOscMessage.checkAddrPattern("velocity")==true || theOscMessage.checkAddrPattern("pitch")==true) {
-    /* check if the typetag is the right one. */
-    if (theOscMessage.checkTypetag("i")) {
-      /* parse theOscMessage and extract the values from the osc message arguments. */
-      int value = theOscMessage.get(0).intValue();  
-
-      if (theOscMessage.addrPattern().equals("pitch") == true) {
-        pitchValue = value;
-        println("pitch = " + pitchValue);
-      } else if (theOscMessage.addrPattern().equals("velocity") == true) {
-        velValue = value;
-        println("velocity = " + value);
-      }
-      return;
-    }
-  }
-}
-
-
-void drawOscTest() {
-pushStyle();
-ellipse(pitchValue, pitchValue, velValue, velValue);
-fill(255);
-textAlign(CENTER);
-text("pitch = " + pitchValue, pitchValue,pitchValue);
-text("velocity = " + velValue, pitchValue,pitchValue+15);
-popStyle();
 }
