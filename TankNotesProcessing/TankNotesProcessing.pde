@@ -69,15 +69,16 @@ static int canvasHeight = 800;
 static final PVector gravity = new PVector(0, 1);
 
 void setup() {
-  println(Serial.list()[7]);
+  size(canvasWidth, canvasHeight, OPENGL);
+  //println(Serial.list());
   myPort = new Serial(this, Serial.list()[7], 9600); 
   myPort.bufferUntil('\n');
 
-  size(canvasWidth, canvasHeight, OPENGL);
+  
   smooth();
   frameRate(30);
 
-  //Lod Tanks
+  //Load Tanks
 
   for (int i = 0; i < tankImgs.length; i ++ ) {
     tankImgs[i] = loadImage( "tankNote_0" + i + ".png" );
@@ -91,12 +92,12 @@ void setup() {
 
 
   //OSC: start oscP5, listening for incoming messages at port 12000 
-  //oscP5 = new OscP5(this, 12000);
-  //myRemoteLocation = new NetAddress("127.0.0.1", 9000);
+  oscP5 = new OscP5(this, 12000);
+  myRemoteLocation = new NetAddress("127.0.0.1", 9000);
 
   //MIDI
   //MidiBus.list(); // List all available Midi devices on STDOUT. This will show each device's index and name.
-  //myBus = new MidiBus(this, 0, 1); // Create a new MidiBus using the device index to select the Midi input and output devices respectively.
+  myBus = new MidiBus(this, 0, 1); // Create a new MidiBus using the device index to select the Midi input and output devices respectively.
 
   physicsCounter = millis();
 
@@ -127,7 +128,6 @@ void draw() {
 
 
   explosionTimer++;
-  readValues();
 
   float posx1 = ox1 + cos(angleCannon1) * cannonLength;
   float posy1 = oy1 + sin(angleCannon1) * cannonLength;
@@ -424,6 +424,7 @@ void serialEvent(Serial thisPort) {
   try {
     // read the serial buffer:
     val = thisPort.readStringUntil('\n');
+    println(val);
 
     if (val != null)
     {
@@ -433,7 +434,7 @@ void serialEvent(Serial thisPort) {
       // split the input string at the commas
       // and convert the sections into integers:
       float controllerInput[] = float(split(val, ','));
-
+       println(controllerInput);
       // if we have received all the values, use them:
       if (controllerInput.length == 3) {
         fired = true;
