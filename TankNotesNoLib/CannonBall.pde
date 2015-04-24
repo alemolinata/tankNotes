@@ -19,6 +19,6 @@ class CannonBall{
 		position.add(velocity);
 		noStroke();
 		fill(TankNotesNoLib.generateColor(position.y, height));
-		ellipse(position.x, position.y, 20, 20);
+		ellipse(position.x, position.y, 50, 50);
 	}
 }
