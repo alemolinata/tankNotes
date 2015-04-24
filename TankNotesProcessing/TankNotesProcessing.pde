@@ -19,11 +19,10 @@ PImage bgImg;
 PImage [] tankImgs = new PImage [4];
 PImage tankCannon;
 
-int damageTank1 = 0;
-int damageTank2 = 0;
+float damageTank1 = 0;
+float damageTank2 = 0;
 
 //OSC 
-
 OscP5 oscP5;
 NetAddress myRemoteLocation;
 
@@ -33,10 +32,7 @@ int glitchSound;
 int glitchBackground;
 
 //MIDI
-
 MidiBus myBus; // The MidiBus
-
-
 
 int channel = 1 ;
 int noteVelocity = 127;
@@ -74,22 +70,16 @@ void setup() {
   myPort = new Serial(this, Serial.list()[7], 9600); 
   myPort.bufferUntil('\n');
 
-  
   smooth();
   frameRate(30);
 
   //Load Tanks
-
   for (int i = 0; i < tankImgs.length; i ++ ) {
     tankImgs[i] = loadImage( "tankNote_0" + i + ".png" );
   }
 
   tankCannon = loadImage("tankNote_cannon.png");
-
-
-
   bgImg = loadImage("Background_greyscale_lofi.jpg");
-
 
   //OSC: start oscP5, listening for incoming messages at port 12000 
   oscP5 = new OscP5(this, 12000);
@@ -113,21 +103,16 @@ void setup() {
 }
 
 void draw() {
-
   image(bgImg, 0, 0);
+  explosionTimer++;
 
   if (glitchBackground > 0) {
 
     pushStyle();
     fill(random(glitchBackground), glitchBackground);
     rect(0, 0, width, height);
-    //filter(INVERT); 
     popStyle();
   }
-
-
-
-  explosionTimer++;
 
   float posx1 = ox1 + cos(angleCannon1) * cannonLength;
   float posy1 = oy1 + sin(angleCannon1) * cannonLength;
@@ -169,23 +154,17 @@ void draw() {
   for (int i = 0; i < cannonballs.size (); i++) {
     CannonBall cb1 = cannonballs.get(i);
 
-    //attempt to check if cannonballs hits tanks
-    if ( dist(cb1.position.x, cb1.position.y, ox1, oy1) < 50 ) {
-      damageTank1 ++;
-      glitchSound = 127;
-      glitchBackground = 155;
-    } 
-
-    if ( dist(cb1.position.x, cb1.position.y, ox2, oy2) < 50 ) {
-      damageTank2 ++;
-      glitchSound = 127;
-      glitchBackground = 155;
-    } 
-
-
-
-
     if (cb1.position.y > height) {
+      toDelete.add(i);
+    } else if ( dist(cb1.position.x, cb1.position.y, ox1, oy1) < 30 ) {
+      damageTank1 += 0.5;
+      glitchSound = 127;
+      glitchBackground = 155;
+      toDelete.add(i);
+    } else if ( dist(cb1.position.x, cb1.position.y, ox2, oy2) < 50 ) {
+      damageTank2 += 0.5;
+      glitchSound = 127;
+      glitchBackground = 155;
       toDelete.add(i);
     } else {
       for (int j = i + 1; j < cannonballs.size (); j++) {
@@ -200,7 +179,6 @@ void draw() {
           explosionTimer = 0;
 
           myBus.sendNoteOn(channel, exp.explosionPitch, noteVelocity); // Send a Midi noteOn
-          println("hello");
         }
       }
     }
@@ -235,11 +213,6 @@ void draw() {
     }
   }
 
-  //background(39, 40, 34);
-
-
-
-
   for (int i = 0; i < cannonballs.size (); i++) {
     cannonballs.get(i).draw();
   }
@@ -248,20 +221,12 @@ void draw() {
     if (explosions.get(i).timer<15) {
       explosions.get(i).draw();
       if (explosions.get(i).timer == explosions.get(i).noteLength) {
-
         myBus.sendNoteOff(channel, explosions.get(i).explosionPitch, noteVelocity); // Send a Midi nodeOff
-        print("goodbye");
-        println(explosions.get(i).explosionPitch);
       }
     } else {
       explosions.remove(i);
     }
   }
-
-  //drawOscTest();  
-
-
-
 
   for (int i = stars.size ()-1; i >= 0; i--) {
     Star star = stars.get(i);
@@ -276,72 +241,57 @@ void draw() {
   sendOsc();
   displayTankDamage();
 
-
   //Smoke Particle System
-
   if (damageTank1 >0) {
     ps.run();
-    if (frameCount % (4 -damageTank1) == 0) {
+    if (frameCount % (4 - round(damageTank1)) == 0) {
       for (int i = 0; i < 1; i++) {
-        ps.addParticle(50*damageTank1);
+        ps.addParticle(50 * round(damageTank1));
       }
     }
   }
-
 
   if (damageTank2 >0) {
     ps2.run();
-    if (frameCount % (4 -damageTank2) == 0) {
+    if (frameCount % (4 - round(damageTank2)) == 0) {
       for (int i = 0; i < 3; i++) {
-        ps2.addParticle(50*damageTank2);
+        ps2.addParticle(50 * round(damageTank2));
       }
     }
   }
-
-
 
   strokeWeight(2);
   stroke(255, 200);
   fill(155);
 
-  /* draw the cannons! */
-  //  ellipse(ox1, oy1, 50, 50);
-  //  ellipse(ox2, oy2, 50, 50);
-  //  line(ox1, oy1, posx1, posy1);
-  //  line(ox2, oy2, posx2, posy2);
-
   pushStyle();
-  imageMode(CENTER);
-  image(tankImgs[damageTank1], ox1, oy1);
-  image(tankImgs[damageTank2], ox2, oy2);
 
-  pushMatrix();
-  translate(ox1, oy1);
-  //float a = atan2(posx1, posy1);
-  rotate(angleCannon1);
-  image(tankCannon, 0, 0);
-  popMatrix();
+    imageMode(CENTER);
+    image(tankImgs[round(damageTank1)], ox1, oy1);
+    image(tankImgs[round(damageTank2)], ox2, oy2);
 
-  pushMatrix();
-  translate(ox2, oy2);
+    pushMatrix();
+    
+      translate(ox1, oy1);
+      rotate(angleCannon1);
+      image(tankCannon, 0, 0);
+    
+    popMatrix();
 
-  rotate(angleCannon2);
-  image(tankCannon, 0, 0);
-  popMatrix();
-
-
-
+    pushMatrix();
+    
+      translate(ox2, oy2);
+      rotate(angleCannon2);
+      image(tankCannon, 0, 0);
+    
+    popMatrix();
 
   popStyle();
 }
 
 public void readValues() {
-  //  angleCannon1 = (radians(random(90)));
-  //  angleCannon1 = 2 * PI - angleCannon1;
   angleCannon1 = 2*PI - map(mouseY, 0, height, PI/2, 0);
 
-  //  angleCannon2 = (radians(random(90)));
-  //  angleCannon2 = PI + angleCannon2;
   angleCannon2 = PI + map(mouseY, 0, height, PI/2, 0);
 
   speedCannon1 = 40;
@@ -390,7 +340,6 @@ void oscEvent(OscMessage theOscMessage) {
       } else if (theOscMessage.addrPattern().equals("velocity") == true) {
         velValue = value;
 
-
         if (velValue > 0 && explosionTimer > 10) {
 
           stars.add(new Star(random(width), notePitch));
@@ -401,10 +350,9 @@ void oscEvent(OscMessage theOscMessage) {
   }
 }
 
-
 void sendOsc() {
 
-  int tankTotal = damageTank1 + damageTank2;
+  int tankTotal = int(damageTank1 + damageTank2);
 
   OscMessage myMessage = new OscMessage("/hitGlitch");
   myMessage.add(glitchSound); /* add an int to the osc message */
