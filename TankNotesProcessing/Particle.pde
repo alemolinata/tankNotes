@@ -41,9 +41,17 @@ class Particle {
   // Method to display
   void render() {
     pushStyle();
-    imageMode(CENTER);
-    tint(255,lifespan);
-    image(img,loc.x,loc.y, 64, 64);
+//    imageMode(CENTER);
+//    tint(255,lifespan);
+//    image(img,loc.x,loc.y, 64, 64);
+    
+    //ellipses instead of tint; 
+    fill(255,lifespan);
+    noStroke();
+    rectMode(CENTER);
+    rect(loc.x,loc.y, 12, 12);
+    
+    
     popStyle();
     // Drawing a circle instead
     // fill(255,lifespan);

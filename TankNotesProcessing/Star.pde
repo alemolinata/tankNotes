@@ -32,7 +32,7 @@ class Star {
     translate(x, y);
     rotate(sin(frameCount / 50.0));
     
-    drawStar(0, 0, 20, 40, 16); 
+    drawStar(0, 0, 15, 30, 12); 
     //ellipse(x, y, w, w);
      popMatrix();
   }

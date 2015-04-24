@@ -1,6 +1,10 @@
 ParticleSystem ps;
+ParticleSystem ps2;
 
 PImage bgImg;
+
+PImage [] tankImgs = new PImage [4];
+PImage tankCannon;
 
 int damageTank1 = 0;
 int damageTank2 = 0;
@@ -20,7 +24,7 @@ int glitchBackground;
 import themidibus.*; //Import the library
 MidiBus myBus; // The MidiBus
 
-int noteLength = 10; 
+
 
 int channel = 1 ;
 int noteVelocity = 127;
@@ -57,9 +61,14 @@ void setup() {
   smooth();
   frameRate(30);
 
-  //Smoke
-  PImage img = loadImage("texture.png");
-  ps = new ParticleSystem(0, new PVector(50, height-50), img);
+  //Lod Tanks
+  
+  for (int i = 0; i < tankImgs.length; i ++ ) {
+    tankImgs[i] = loadImage( "tankNote_0" + i + ".png" ); 
+  }
+  
+  tankCannon = loadImage("tankNote_cannon.png");
+  
 
 
   bgImg = loadImage("Background_greyscale_lofi.jpg");
@@ -75,10 +84,16 @@ void setup() {
 
   physicsCounter = millis();
 
-  ox1 = 50;
-  oy1 = height - 50;
-  ox2 = width - 50;
+  ox1 = 75;
+  oy1 = height - 75;
+  ox2 = width - 75;
   oy2 = oy1;
+  
+  //Smoke
+  PImage img = loadImage("texture.png");
+  ps = new ParticleSystem(0, new PVector(ox1, oy1-7), img);
+  ps2 = new ParticleSystem(0, new PVector(ox2, oy2-7), img);
+  
 }
 
 void draw() {
@@ -86,15 +101,14 @@ void draw() {
   image(bgImg, 0, 0);
   
   if (glitchBackground > 0){
-   filter(INVERT); 
+    
+    pushStyle();
+    fill(random(glitchBackground), glitchBackground);
+    rect(0,0,width,height);
+    //filter(INVERT); 
+    popStyle();
   }
   
-
-  if (frameCount % 2 == 0) {
-    int noteLength = 10;
-  } else {
-    int noteLength = 2;
-  }
 
 
   explosionTimer++;
@@ -139,16 +153,16 @@ void draw() {
     CannonBall cb1 = cannonballs.get(i);
 
     //attempt to check if cannonballs hits tanks
-    if ( dist(cb1.position.x, cb1.position.y, ox1, oy1) < 30 ) {
+    if ( dist(cb1.position.x, cb1.position.y, ox1, oy1) < 50 ) {
       damageTank1 ++;
       glitchSound = 127;
-      glitchBackground = 10;
+      glitchBackground = 155;
     } 
 
-    if ( dist(cb1.position.x, cb1.position.y, ox2, oy2) < 30 ) {
+    if ( dist(cb1.position.x, cb1.position.y, ox2, oy2) < 50 ) {
       damageTank2 ++;
       glitchSound = 127;
-      glitchBackground = 10;
+      glitchBackground = 155;
       
     } 
 
@@ -164,12 +178,13 @@ void draw() {
         if (dist< 80) {
           toDelete.add(i);
           toDelete.add(j);
-          float aX = (cb1.position.x + cb2.position.x)/2;
-          float aY = (cb1.position.y + cb2.position.y)/2;
-          Explosion exp = new Explosion(aX, aY);
+          PVector mPositionVector = new PVector((cb1.position.x + cb2.position.x)/2, (cb1.position.y + cb2.position.y)/2);
+          Explosion exp = new Explosion(mPositionVector, cannonballs.get(i).velocity, cannonballs.get(j).velocity);
           explosions.add(exp);
           explosionTimer = 0;
+          
           myBus.sendNoteOn(channel, exp.explosionPitch, noteVelocity); // Send a Midi noteOn
+          println("hello");
         }
       }
     }
@@ -198,8 +213,8 @@ void draw() {
   for (int i = cannonballs.size ()-1; i >= 0; i--) {
     for (int j = 0; j < toDelete.size (); j++) {
       if (i == toDelete.get(j)) {
-        // THIS IS GOING TO BE A PROBLEM IF THREE COLLIDE! fix that....
         cannonballs.remove(i);
+        break;
       }
     }
   }
@@ -214,12 +229,13 @@ void draw() {
   }
 
   for (int i = explosions.size () - 1; i >= 0; i--) {
-    if (explosions.get(i).c<15) {
+    if (explosions.get(i).timer<15) {
       explosions.get(i).draw();
-
-
-      if (explosions.get(i).c==noteLength) {
+      if (explosions.get(i).timer == explosions.get(i).noteLength) {
+        
         myBus.sendNoteOff(channel, explosions.get(i).explosionPitch, noteVelocity); // Send a Midi nodeOff
+        print("goodbye");
+        println(explosions.get(i).explosionPitch);
       }
     } else {
       explosions.remove(i);
@@ -255,25 +271,62 @@ void draw() {
       }
     }
   }
+  
+  
+  if (damageTank2 >0) {
+    ps2.run();
+    if (frameCount % (4 -damageTank2) == 0) {
+      for (int i = 0; i < 3; i++) {
+        ps2.addParticle(50*damageTank2);
+      }
+    }
+  }
+  
+  
+  
   strokeWeight(2);
   stroke(255, 200);
   fill(155);
 
   /* draw the cannons! */
-  ellipse(ox1, oy1, 50, 50);
-  ellipse(ox2, oy2, 50, 50);
-  line(ox1, oy1, posx1, posy1);
-  line(ox2, oy2, posx2, posy2);
+//  ellipse(ox1, oy1, 50, 50);
+//  ellipse(ox2, oy2, 50, 50);
+//  line(ox1, oy1, posx1, posy1);
+//  line(ox2, oy2, posx2, posy2);
+  
+  pushStyle();
+  imageMode(CENTER);
+  image(tankImgs[damageTank1], ox1, oy1);
+  image(tankImgs[damageTank2], ox2, oy2);
+  
+  pushMatrix();
+  translate(ox1, oy1);
+  //float a = atan2(posx1, posy1);
+  rotate(angleCannon1);
+  image(tankCannon, 0, 0);
+  popMatrix();
+  
+  pushMatrix();
+  translate(ox2, oy2);
+  
+  rotate(angleCannon2);
+  image(tankCannon, 0, 0);
+  popMatrix();
+  
+  
+  
+  
+  popStyle();
 }
 
 public void readValues() {
-  //angleCannon1 = (radians(random(90)));
-  //angleCannon1 = 2 * PI - angleCannon1;
-  angleCannon1 = 1.7*PI + sin(radians(mouseY));
+//  angleCannon1 = (radians(random(90)));
+//  angleCannon1 = 2 * PI - angleCannon1;
+  angleCannon1 = 2*PI - map(mouseY, 0, height, PI/2, 0);
 
   //  angleCannon2 = (radians(random(90)));
   //  angleCannon2 = PI + angleCannon2;
-  angleCannon2 = 1.3*PI - sin(radians(mouseY));
+  angleCannon2 = PI + map(mouseY, 0, height, PI/2, 0);
 
   speedCannon1 = 40;
   speedCannon2 = 40;
@@ -308,7 +361,7 @@ static int generateColor(float colorHeight, int screenHeight) {
 void oscEvent(OscMessage theOscMessage) {
   /* check if theOscMessage has the address pattern we are looking for. */
 
-  int notePitch = (int)map(pitchValue, 38, 70, TankNotesNoLib.canvasHeight/1.5, 50);
+  int notePitch = (int)map(pitchValue, 38, 70, TankNotesProcessing.canvasHeight/1.5, 50);
 
   if (theOscMessage.checkAddrPattern("velocity")==true || theOscMessage.checkAddrPattern("pitch")==true) {
     /* check if the typetag is the right one. */
@@ -335,9 +388,13 @@ void oscEvent(OscMessage theOscMessage) {
 
 
 void sendOsc() {
+  
+  int tankTotal = damageTank1 + damageTank2;
+  
   OscMessage myMessage = new OscMessage("/hitGlitch");
   myMessage.add(glitchSound); /* add an int to the osc message */
-
+  myMessage.add(tankTotal);
+  
   /* send the message */
   oscP5.send(myMessage, myRemoteLocation);
 }

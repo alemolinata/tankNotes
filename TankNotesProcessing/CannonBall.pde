@@ -15,10 +15,10 @@ class CannonBall{
 	}
 
 	public void draw(){
-		velocity.add(TankNotesNoLib.gravity);
+		velocity.add(TankNotesProcessing.gravity);
 		position.add(velocity);
 		noStroke();
-		fill(TankNotesNoLib.generateColor(position.y, height));
+		fill(TankNotesProcessing.generateColor(position.y, height));
 		ellipse(position.x, position.y, 50, 50);
 	}
 }
